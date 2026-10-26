@@ -1,0 +1,216 @@
+# Idempotency in Event-Driven Architecture — Interview Notes
+
+## 1. What is Idempotency?
+
+**Definition:** Idempotency is a property of an operation where executing it multiple times produces the same final system state or intended business effect as executing it once.
+
+**In simple Hinglish:**
+
+Ek hi operation ko baar-baar execute karne par bhi same final result milna chahiye. Operation repeat hone ki wajah se duplicate business effect nahi hona chahiye.
+
+**Example:**
+- Set user status to `ACTIVE` five times → user remains active.
+- Add ₹100 to a wallet five times → balance increases five times.
+
+The first operation is idempotent. The second is not.
+
+## 2. Why is Idempotency Important in Event-Driven Architecture?
+
+In Event-Driven Architecture (EDA), services communicate using events and message queues.
+
+For example:
+
+1. An order service creates an order.
+2. It publishes an `OrderCreated` event.
+3. A message queue delivers the event to a worker.
+4. The worker processes the event and updates the database.
+
+Sometimes, the same event can be delivered more than once because of retries, network failures, consumer crashes, or message redelivery.
+
+Without idempotency, the same business operation might happen multiple times.
+
+**Example:** A payment worker processes a ₹1,000 payment, but crashes before acknowledging the message. The queue redelivers the message, and the worker might charge the customer again.
+
+Idempotency helps prevent this duplicate payment.
+
+## 3. Why Can the Same Background Job Run Multiple Times?
+
+A background worker may execute the same job again because:
+
+- The job failed and the queue retried it.
+- The worker crashed after performing the operation but before acknowledging the job.
+- A network timeout made the result uncertain.
+- A message broker redelivered an unacknowledged message.
+- A producer published the same event more than once.
+
+This is why many event-driven systems are designed to tolerate duplicate delivery.
+
+## 4. How Does Idempotency Work?
+
+A common approach is to give each logical operation a unique identifier, such as `eventId`, `paymentId`, or `orderId`.
+
+The worker uses this identifier to determine whether the operation has already been completed.
+
+**Basic flow:**
+
+1. Receive the event or job.
+2. Read its unique identifier.
+3. Check whether the operation has already been processed.
+4. If it has been processed, skip the duplicate business operation.
+5. Otherwise, perform the operation and record its outcome safely.
+
+For production systems, the check, state change, and recording of completion must be designed to handle concurrent workers and crashes safely.
+
+## 5. Node.js Example
+
+Imagine a payment worker using Node.js and BullMQ.
+
+```javascript
+async function processPayment(job) {
+  const { paymentId, orderId, amount } = job.data;
+
+  // Check whether this payment already succeeded
+  const existingPayment = await Payment.findOne({
+    paymentId,
+    status: "SUCCESS"
+  });
+
+  if (existingPayment) {
+    console.log("Payment already processed. Skipping.");
+    return;
+  }
+
+  // Use provider-supported idempotency
+  const result = await paymentProvider.charge({
+    amount,
+    idempotencyKey: paymentId
+  });
+
+  // Record the successful payment
+  await Payment.updateOne(
+    { paymentId },
+    {
+      $set: {
+        orderId,
+        amount,
+        status: "SUCCESS",
+        providerPaymentId: result.id
+      }
+    },
+    { upsert: true }
+  );
+}
+```
+
+**Important:** This is an illustrative example. The database check alone is not sufficient for production because two workers could check simultaneously, or a worker could crash between the payment request and database update.
+
+A robust implementation uses the payment provider's idempotency support, unique database constraints, safe state transitions, and appropriate retry and recovery handling.
+
+## 6. What Is an Idempotency Key?
+
+An idempotency key is a unique identifier associated with one logical operation.
+
+Example:
+
+```json
+{
+  "paymentId": "PAY-101",
+  "orderId": "ORD-101",
+  "amount": 1000
+}
+```
+
+Here, `PAY-101` can be used as the idempotency key.
+
+If the same payment request is retried with the same key, a payment provider that supports idempotency can recognize the repeated request and avoid creating another charge.
+
+**Important:** Reuse the same key for retries of the same logical operation. A new, unrelated payment should have a different key.
+
+## 7. Where Is Idempotency Used?
+
+| Use case | Example |
+|---|---|
+| Event-driven architecture | The same `OrderCreated` event arrives twice. |
+| Background workers | A payment job is retried after a timeout. |
+| Kafka or RabbitMQ | A consumer receives a previously delivered message again. |
+| BullMQ | A failed job is retried. |
+| Webhooks | A payment provider sends the same notification multiple times. |
+| Scheduled jobs | A scheduled invoice-generation job runs again after a restart. |
+| REST APIs | A client retries a payment request after losing the response. |
+
+## 8. Idempotency in Message Queues
+
+Message brokers and queues often provide delivery guarantees that can result in duplicate processing.
+
+- **At-most-once delivery:** A message is delivered zero or one time, but may be lost.
+- **At-least-once delivery:** A message is retried until acknowledged or until the delivery policy stops, so duplicates are possible.
+- **Exactly-once processing:** Stronger guarantees may be available within specific system boundaries, but end-to-end exactly-once business effects generally require careful coordination with databases and external services.
+
+**Key point:** Do not assume that a queue's retry mechanism automatically makes your business operation idempotent.
+
+## 9. How Do You Implement Idempotency Safely?
+
+Common techniques include:
+
+1. **Unique event IDs:** Identify duplicate events.
+2. **Idempotency keys:** Deduplicate repeated API or payment requests.
+3. **Unique database constraints:** Prevent duplicate records for the same logical operation.
+4. **Atomic database transactions:** Commit related state changes together.
+5. **Processed-event records:** Track which events have completed.
+6. **Safe state transitions:** Prevent invalid transitions, such as marking an already-refunded payment as refunded again.
+7. **Provider-side idempotency:** Use the external service's deduplication feature for operations such as payments.
+
+For example, if a worker updates an order and records the event as processed, those database changes can be performed in one transaction. However, external side effects such as charging a payment provider require additional safeguards.
+
+## 10. Idempotent vs. Non-Idempotent Operations
+
+| Operation | Idempotent? | Explanation |
+|---|---|---|
+| Set user status to `ACTIVE` | Yes | Repeating it preserves the same status. |
+| Set order status to `SHIPPED` | Usually yes | Repeating the same state update has no additional effect. |
+| Add ₹100 to a wallet | No | Each execution increases the balance. |
+| Charge a credit card | Not inherently | Repeated charges can occur without deduplication. |
+| Mark an event as processed | Potentially | Safe when implemented with appropriate uniqueness and atomicity. |
+| Send an email | Not inherently | Repeated execution can send duplicate emails. |
+
+## 11. Common Interview Questions
+
+**Q1. What is idempotency in a background worker?**
+
+Idempotency ensures that retrying the same logical job does not produce duplicate business effects.
+
+**Q2. Why is idempotency needed if a message queue already retries failed jobs?**
+
+Retries improve reliability, but the same job may execute multiple times. Idempotency makes repeated execution safe.
+
+**Q3. How do you prevent duplicate payment processing?**
+
+Use a stable payment identifier, provider-supported idempotency keys, unique database constraints, and safe payment state transitions.
+
+**Q4. Is checking the database before processing enough?**
+
+Not always. Concurrent workers can both pass the check, and a crash can occur between an external operation and recording its result. Atomic operations, unique constraints, and external-provider idempotency may be necessary.
+
+**Q5. What is the difference between retries and idempotency?**
+
+Retries attempt a failed or uncertain operation again. Idempotency ensures that repeating the operation does not produce duplicate business effects.
+
+**Q6. What is the difference between an event ID and an idempotency key?**
+
+An event ID identifies an event. An idempotency key identifies a logical operation that should not be performed more than once. They can sometimes use the same value, depending on the system design.
+
+## 12. Interview-Ready Answer
+
+Idempotency in Event-Driven Architecture means that processing the same event or background job multiple times produces the same intended business effect as processing it once.
+
+It is important because message queues and workers may retry jobs or deliver events more than once due to failures, timeouts, or redelivery.
+
+We can implement idempotency using unique event IDs, idempotency keys, database constraints, atomic state changes, and processed-event tracking.
+
+For example, in a payment worker, we use a stable payment ID as an idempotency key so that retrying the same payment request does not charge the customer twice.
+
+## 13. One-Line Memory Trick
+
+**Retries repeat the execution; idempotency prevents the repeated execution from causing duplicate business effects.**
+
+Example: Same payment job runs five times, but the customer is charged only once.
