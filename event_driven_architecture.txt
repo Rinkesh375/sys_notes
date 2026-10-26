@@ -1,0 +1,62 @@
+EVENT-DRIVEN ARCHITECTURE (EDA) — BEGINNER NOTES
+
+1. WHAT IS EDA?
+Event-Driven Architecture is a way of building software where components react to events.
+Simple meaning: Jab application mein kuch hota hai, toh us event ke basis par doosre components apna kaam karte hain.
+
+2. WHAT IS AN EVENT?
+An event means something happened.
+Examples:
+- UserRegistered
+- OrderPlaced
+- PaymentCompleted
+
+3. HOW DOES EDA WORK?
+Example: Online shopping app
+1. Customer places an order.
+2. Order Service saves the order.
+3. It publishes an OrderPlaced event.
+4. Email Service reacts and sends an email.
+5. Inventory Service reacts and updates stock.
+
+4. THREE IMPORTANT TERMS
+Producer: Creates or publishes an event.
+Broker: Delivers events to interested services. Example: Kafka or RabbitMQ.
+Consumer: Receives an event and performs a task.
+
+5. SIMPLE FLOW
+Producer → Event → Broker → Consumer
+
+6. NODE.JS EXAMPLE
+const EventEmitter = require("events");
+const emitter = new EventEmitter();
+
+emitter.on("OrderPlaced", () => {
+  console.log("Send confirmation email");
+});
+
+emitter.emit("OrderPlaced");
+
+Here:
+.on() registers a listener.
+.emit() triggers an event.
+
+7. WHY USE EDA?
+- Services can work independently.
+- Background tasks can be processed separately.
+- New consumers can be added more easily.
+- It can improve responsiveness.
+
+8. CHALLENGES
+- Debugging can be harder.
+- Events can sometimes be processed more than once.
+- Failed events need proper retry handling.
+- Data may take some time to become consistent across services.
+
+9. REMEMBER
+Event = Something happened.
+Producer = Publishes the event.
+Broker = Delivers the event.
+Consumer = Reacts to the event.
+
+EDA means components communicate through events and react when something happens.
