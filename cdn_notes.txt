@@ -1,0 +1,53 @@
+# CDN (Content Delivery Network) — Interview Notes
+
+## 1. What is a CDN?
+
+A **CDN (Content Delivery Network)** is a network of geographically distributed servers that delivers website content, such as images, CSS, JavaScript, and videos, to users from a nearby server to improve loading speed and reduce latency.
+
+## 2. How does a CDN work?
+
+1. A website stores its original files on an origin server, such as AWS S3.
+2. A user requests a file, such as a product image.
+3. The CDN checks whether the file is available in its cache.
+4. If the file is cached (**Cache Hit**), the CDN delivers it to the user.
+5. If the file is not cached (**Cache Miss**), the CDN fetches it from the origin server and may cache it for future requests.
+
+## 3. Real-life example
+
+Suppose my e-commerce website stores product images in an AWS S3 bucket in the USA, but most users are in India.
+
+Without a CDN, users may need to download images directly from the USA.
+
+With a CDN such as Amazon CloudFront, images can be cached at nearby edge locations. Indian users can then receive cached images from a nearby CDN server instead of repeatedly fetching them from the USA.
+
+I don't need to purchase a separate server in India because CloudFront provides access to AWS's existing global network.
+
+## 4. What are the benefits of a CDN?
+
+- **Faster loading:** Delivers cached content from nearby servers.
+- **Reduced origin load:** Fewer requests need to reach the original server.
+- **Better scalability:** Helps handle large numbers of content requests.
+- **Improved availability:** Cached content may remain available even if the origin has temporary issues, depending on the configuration.
+- **Security:** Some CDN providers offer DDoS protection and other security features.
+
+## 5. What is the difference between CDN and CloudFront?
+
+CDN is a technology/service category, whereas Amazon CloudFront is a specific CDN service provided by AWS.
+
+Other CDN providers include Cloudflare and Akamai.
+
+## 6. CDN vs Backend vs Database
+
+- **CDN:** Delivers cacheable content, such as images and static files.
+- **Backend:** Handles business logic, authentication, and API requests.
+- **Database:** Stores application data, such as users, products, and orders.
+
+A CDN does not replace the backend or database.
+
+## 7. Interview answer (short version)
+
+"A CDN, or Content Delivery Network, is a globally distributed network of servers that delivers website content from nearby locations to reduce latency and improve performance. It caches content such as images, CSS, and JavaScript. When a user requests a file, the CDN serves it from its cache if available; otherwise, it fetches the file from the origin server and may cache it for future requests. For example, I can store images in AWS S3 and use Amazon CloudFront to deliver them efficiently to users worldwide."
+
+## Keywords to remember
+
+**CDN · Edge Server · Origin Server · Cache Hit · Cache Miss · Latency · CloudFront · AWS S3**
