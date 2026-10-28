@@ -1,0 +1,299 @@
+# GitLab Authentication Setup on macOS
+
+## 1. Overview
+
+This document explains how Git authentication is configured on a MacBook to access GitLab repositories using:
+
+- Personal Access Token (PAT) authentication over HTTPS.
+- Git Credential Manager (GCM) for browser-based authentication.
+- macOS Keychain for securely storing credentials.
+- Global Git username and email configuration.
+
+**Important:** PAT authentication and browser-based GCM authentication are two different methods. Choose the method supported by your company's GitLab server and authentication policies.
+
+## 2. Configure Git Identity Globally
+
+Git identity determines the author name and email recorded in commits. It does not authenticate you to GitLab.
+
+Run:
+
+```bash
+git config --global user.name "@rinkesh"
+git config --global user.email "rinkesh@pharmaedge.ai"
+```
+
+Verify:
+
+```bash
+git config --global --list
+```
+
+Expected configuration:
+
+```text
+user.name=@rinkesh
+user.email=rinkesh@pharmaedge.ai
+```
+
+## 3. Configure PAT Authentication
+
+### Step 1: Create a Personal Access Token
+
+1. Log in to your GitLab account.
+2. Open your GitLab profile settings.
+3. Navigate to **Access Tokens**.
+4. Create a token with a descriptive name, such as `MacBook-Git-Access`.
+5. Set an appropriate expiration date.
+6. Select the required scopes:
+   - `read_repository` — clone, fetch, and pull repository code.
+   - `write_repository` — push repository changes.
+7. Generate the token and copy it immediately.
+
+For a self-hosted company GitLab instance, use your company's GitLab URL.
+
+### Step 2: Configure macOS Keychain
+
+Configure Git to use the macOS Keychain credential helper:
+
+```bash
+git config --global credential.helper osxkeychain
+```
+
+Verify:
+
+```bash
+git config --global --get credential.helper
+```
+
+Expected output:
+
+```text
+osxkeychain
+```
+
+### Step 3: Authenticate over HTTPS
+
+Ensure your repository uses an HTTPS remote URL:
+
+```bash
+git remote -v
+```
+
+If the remote is already configured, run:
+
+```bash
+git fetch
+```
+
+When prompted for credentials:
+
+- **Username:** Your GitLab username.
+- **Password:** Paste your Personal Access Token, not your GitLab account password.
+
+If macOS offers to save the credentials in Keychain, allow it.
+
+Git can reuse the saved credentials for subsequent operations, subject to token expiration and server policies.
+
+## 4. Alternative: Browser-Based Login Using Git Credential Manager
+
+Git Credential Manager (GCM) supports browser-based authentication for supported GitLab configurations.
+
+### Step 1: Install GCM
+
+If Homebrew is installed:
+
+```bash
+brew install --cask git-credential-manager
+```
+
+Verify the installation:
+
+```bash
+git credential-manager --version
+```
+
+### Step 2: Configure GCM
+
+Run:
+
+```bash
+git-credential-manager configure
+```
+
+Configure browser authentication:
+
+```bash
+git config --global credential.gitLabAuthModes browser
+```
+
+Configure macOS Keychain storage:
+
+```bash
+git config --global credential.credentialStore keychain
+```
+
+Verify the settings:
+
+```bash
+git config --global --get credential.helper
+git config --global --get credential.gitLabAuthModes
+git config --global --get credential.credentialStore
+```
+
+Expected values are generally:
+
+```text
+manager
+browser
+keychain
+```
+
+### Step 3: Trigger Browser Authentication
+
+Navigate to the project directory and run:
+
+```bash
+git fetch
+```
+
+If authentication is required, GCM should initiate the browser sign-in flow when supported by the GitLab server.
+
+Complete the login and authorization steps in the browser.
+
+**Note:** Browser OAuth support depends on the GitLab deployment and authentication configuration. Some self-hosted instances may require PAT-based authentication instead.
+
+## 5. Check the Repository Remote
+
+Before fetching or pushing code, confirm that the correct remote repository is configured:
+
+```bash
+git remote -v
+```
+
+If no remote is configured, obtain the correct HTTPS clone URL from your GitLab project and add it:
+
+```bash
+git remote add origin <GITLAB_HTTPS_CLONE_URL>
+```
+
+Replace the placeholder with the actual URL copied from GitLab.
+
+Verify:
+
+```bash
+git remote -v
+```
+
+## 6. Fetch and Work With Remote Branches
+
+Fetch all remote updates:
+
+```bash
+git fetch --all --prune
+```
+
+List local branches:
+
+```bash
+git branch
+```
+
+List local and remote-tracking branches:
+
+```bash
+git branch -a
+```
+
+List remote-tracking branches only:
+
+```bash
+git branch -r
+```
+
+To create a local branch from an existing remote branch:
+
+```bash
+git switch --track origin/<BRANCH_NAME>
+```
+
+Replace `<BRANCH_NAME>` with the actual remote branch name.
+
+## 7. Verify Authentication
+
+Run:
+
+```bash
+git fetch
+```
+
+If the command succeeds without asking for credentials again, authentication is working for that repository and remote.
+
+You can then use:
+
+```bash
+git pull
+git push
+```
+
+Your permissions must allow the requested operation.
+
+## 8. Troubleshooting
+
+### No branches are displayed
+
+Check:
+
+```bash
+git status
+git remote -v
+git branch -a
+```
+
+If `git status` reports `No commits yet` and files are untracked, verify that this is the correct repository and that its original Git history has not been lost.
+
+Do not run `git init`, `git add .`, or `git commit` blindly to fix a missing repository history.
+
+### Authentication fails
+
+- Confirm the token has not expired or been revoked.
+- Confirm that the token has the required repository scopes.
+- Verify the remote URL and your repository access.
+- Follow your company's SSO or authorization requirements, if applicable.
+
+### Old credentials are being reused
+
+Open **Keychain Access** on macOS and search for the relevant GitLab host. Inspect the matching credential entry before changing or deleting it.
+
+### Git operations still prompt for credentials
+
+Verify the configured helper:
+
+```bash
+git config --show-origin --get-all credential.helper
+```
+
+Check whether multiple helpers are configured and whether they conflict.
+
+## 9. Security Best Practices
+
+- Never commit or share your Personal Access Token.
+- Never embed a token in a Git remote URL.
+- Prefer macOS Keychain or Git Credential Manager over plaintext credential storage.
+- Use the minimum required token scopes.
+- Set an expiration date and rotate tokens according to company policy.
+- Keep private SSH keys and access tokens confidential.
+
+## 10. Quick Reference
+
+| Purpose | Command |
+|---|---|
+| Set Git username | `git config --global user.name "@rinkesh"` |
+| Set Git email | `git config --global user.email "rinkesh@pharmaedge.ai"` |
+| Configure macOS Keychain helper | `git config --global credential.helper osxkeychain` |
+| Configure GCM | `git-credential-manager configure` |
+| Fetch all branches | `git fetch --all --prune` |
+| List all branches | `git branch -a` |
+| Check remote URL | `git remote -v` |
+| Check Git identity | `git config --global --list` |
+
+**Recommended approach:** For a company-managed GitLab account, use the authentication method supported by your organization's server. PAT + Keychain is a straightforward HTTPS option; GCM is useful when browser-based OAuth is supported.
