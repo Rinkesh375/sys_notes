@@ -1,0 +1,134 @@
+# Database Integrity – Notes
+
+## 1. What is Database Integrity?
+Database Integrity means maintaining data in a database so that it remains accurate, consistent, valid, complete, and reliable.
+
+Its purpose is to prevent incorrect, duplicate, invalid, or inconsistent data from being stored in the database.
+
+**Example:** If an order belongs to a user, that user must exist in the Users table.
+
+---
+
+## 2. Why is Database Integrity Important?
+- Maintains data accuracy.
+- Prevents invalid data from being inserted.
+- Helps avoid duplicate records.
+- Maintains consistency between related tables.
+- Makes the application more reliable.
+- Reduces data mismatch and corruption.
+
+---
+
+## 3. Types of Database Integrity
+
+### A. Entity Integrity
+Ensures that every record in a table can be uniquely identified.
+
+**Rules:**
+- Primary Key must be unique.
+- Primary Key cannot be NULL.
+- Duplicate IDs are not allowed.
+
+**Example:** A Users table has a unique ID for every user.
+
+### B. Referential Integrity
+Ensures that relationships between tables remain valid.
+
+A Foreign Key must reference an existing record in the related table.
+
+**Example:** An order must belong to an existing user. An order with user_id = 99 cannot be inserted if user 99 does not exist.
+
+**Constraint used:** FOREIGN KEY
+
+### C. Domain Integrity
+Ensures that column values follow their defined data type, range, and rules.
+
+**Example:**
+- Age cannot be negative.
+- Salary must be greater than zero.
+- Email must be unique if required.
+
+**Constraints used:**
+- DATA TYPE
+- NOT NULL
+- CHECK
+- DEFAULT
+
+### D. User-Defined Integrity
+Ensures that data follows specific business rules defined by the organization or application.
+
+**Examples:**
+- Employee salary must be greater than zero.
+- Bank withdrawal cannot exceed the available balance.
+- An order cannot be dispatched if payment is pending.
+
+These rules can be enforced through database constraints, transactions, or application logic.
+
+---
+
+## 4. SQL Constraints Used to Maintain Data Integrity
+
+- PRIMARY KEY – Uniquely identifies each record.
+- FOREIGN KEY – Maintains valid relationships between tables.
+- NOT NULL – Prevents NULL values in a column.
+- UNIQUE – Prevents duplicate values.
+- CHECK – Ensures values satisfy a specific condition.
+- DEFAULT – Assigns a default value when no value is provided.
+
+---
+
+## 5. Practical SQL Example
+
+    CREATE TABLE users (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(150) UNIQUE
+    );
+
+    CREATE TABLE orders (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id),
+        amount NUMERIC CHECK (amount > 0)
+    );
+
+### What integrity rules are applied?
+
+- PRIMARY KEY → Ensures unique identity.
+- NOT NULL → Name cannot be NULL.
+- UNIQUE → Duplicate email addresses are not allowed.
+- FOREIGN KEY → Order must reference a valid user.
+- CHECK → Order amount must be greater than zero.
+
+---
+
+## 6. Data Integrity Violation
+When a database rule is broken, it is called a Data Integrity Violation.
+
+Examples:
+
+- Primary Key Violation → Inserting a duplicate ID.
+- Foreign Key Violation → Creating an order for a non-existing user.
+- Unique Violation → Inserting an already existing email.
+- Check Violation → Inserting a negative amount.
+- Not-Null Violation → Inserting NULL into a required column.
+
+---
+
+## 7. Database Integrity vs Data Security
+
+**Database Integrity:** Ensures data is accurate, valid, and consistent.
+
+**Data Security:** Protects data from unauthorized access, modification, or deletion.
+
+---
+
+## 8. Quick Revision
+
+- Database Integrity → Data should be accurate, valid, and consistent.
+- Entity Integrity → Every record must have a unique identity.
+- Referential Integrity → Relationships between tables must be valid.
+- Domain Integrity → Values must follow defined rules.
+- User-Defined Integrity → Data must follow business rules.
+- Integrity Violation → When a database rule is broken.
+
+**Remember:** The main goal of Database Integrity is to prevent invalid data and maintain consistency throughout the database.
