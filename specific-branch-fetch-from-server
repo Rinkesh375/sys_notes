@@ -1,0 +1,153 @@
+# Git Branch Management Notes (MacBook)
+
+## 1. Clone a repository
+
+Clone the repository only once:
+
+```bash
+git clone https://git.1digitalstack.com/ods-poc/admin-console.git
+```
+
+Enter the project folder:
+
+```bash
+cd admin-console
+```
+
+> Always run Git commands from inside the project folder, not from Desktop.
+
+---
+
+## 2. Check local branches
+
+Show only branches that exist locally:
+
+```bash
+git branch
+```
+
+Example:
+
+```bash
+* main
+```
+
+---
+
+## 3. Fetch a specific remote branch
+
+When you want to bring a branch from GitLab to your local machine, without fetching every branch:
+
+```bash
+git fetch origin dev:refs/remotes/origin/dev
+```
+
+This fetches only the `dev` branch and updates the remote-tracking reference `origin/dev`.
+
+---
+
+## 4. Create a local branch from the remote branch
+
+After fetching, create a local branch that tracks the remote branch:
+
+```bash
+git switch --track origin/dev
+```
+
+Now your local `dev` branch is connected to `origin/dev`.
+
+Verify:
+
+```bash
+git branch -vv
+```
+
+---
+
+## 5. Pull the latest changes
+
+If you are already on the `dev` branch:
+
+```bash
+git pull
+```
+
+Or explicitly:
+
+```bash
+git pull origin dev
+```
+
+---
+
+## 6. Bring another branch when needed
+
+For example, when you need `staging` in the future:
+
+### Fetch the branch
+
+```bash
+git fetch origin staging:refs/remotes/origin/staging
+```
+
+### Create and switch to the local branch
+
+```bash
+git switch --track origin/staging
+```
+
+Repeat this process for any branch you need.
+
+---
+
+## 7. Useful Git commands
+
+| Command | Purpose |
+|---|---|
+| `git branch` | Show local branches |
+| `git branch -r` | Show remote-tracking branches |
+| `git branch -vv` | Show local branches and tracking information |
+| `git status` | Check working tree status |
+| `git fetch origin dev:refs/remotes/origin/dev` | Fetch only the dev branch |
+| `git switch dev` | Switch to an existing local branch |
+| `git pull` | Update current branch |
+| `git switch main` | Switch to main |
+| `git branch -d dev` | Delete local dev branch safely |
+| `git branch -D dev` | Force delete local dev branch |
+
+---
+
+## 8. Recommended workflow
+
+### First time bringing a branch from GitLab
+
+```bash
+git fetch origin dev:refs/remotes/origin/dev
+git switch --track origin/dev
+```
+
+### Next time, update the same branch
+
+```bash
+git switch dev
+git pull
+```
+
+### When you need a new branch in the future
+
+```bash
+git fetch origin staging:refs/remotes/origin/staging
+git switch --track origin/staging
+```
+
+---
+
+## Important
+
+- `git clone` — downloads the repository initially.
+- `git fetch` — downloads updates/branch information without changing your working files.
+- `git switch --track` — creates a local branch connected to the remote branch.
+- `git pull` — fetches and integrates updates into your current branch.
+- You don't need to create all remote branches locally.
+- Keep only the branches you actually need for your work.
+- Avoid using `git branch -D` unless you are sure you don't need the local branch or its work.
